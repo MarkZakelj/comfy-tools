@@ -7,6 +7,8 @@ import scipy
 import torch
 from folder_paths import models_dir, folder_names_and_paths
 from scipy.stats import entropy
+from math import sqrt
+
 
 
 def add_folder_path_and_extensions(folder_name, full_folder_paths, extensions):
@@ -141,6 +143,9 @@ class FaceMatcher:
                 "input_faces": ("IMAGE",),
                 "target_faces": ("IMAGE",),
             },
+            "optional": {
+                "reverse": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+            }
         }
 
     INPUT_IS_LIST = (True, True)
@@ -149,12 +154,18 @@ class FaceMatcher:
     FUNCTION = "match_faces"
     CATEGORY = "Personal Tools"
 
-    def match_faces(self, input_faces: list, target_faces: list):
+    def match_faces(self, input_faces: list, target_faces: list, reverse=False):
         if len(input_faces) == 0 or len(target_faces) == 0:
             return (None, )
         # input_faces = torch.cat(input_faces, dim=0)
+        
+        # keep only n biggest target faces - don't use background faces basically
+        # target_faces = sorted(target_faces, key=lambda x: x.shape[1] * x.shape[2], reverse=True)[:len(input_faces)]
+        target_sizes = [sqrt(face.shape[1] * face.shape[2]) for face in target_faces]
+        m_size = max(target_sizes)
+        target_sizes = [size / m_size for size in target_sizes]
+            
         input_faces = preprocess_image(input_faces, resize=(160, 160))
-        # target_faces = torch.cat(target_faces, dim=0)
         target_faces = preprocess_image(target_faces, resize=(160, 160))
         age_i, sex_i = self.model.predict_probs(input_faces)
         age_t, sex_t = self.model.predict_probs(target_faces)
@@ -162,7 +173,7 @@ class FaceMatcher:
         for i in range(len(input_faces)):
             for j in range(len(target_faces)):
                 distances[i, j] = (0.7 * js_divergence(age_i[i], age_t[j]) +
-                                   0.3 * js_divergence(sex_i[i], sex_t[j]))
+                                   0.3 * js_divergence(sex_i[i], sex_t[j])) + (1 - target_sizes[j])
         rows, cols = scipy.optimize.linear_sum_assignment(distances)
         mapping = list(zip(rows, cols))
         mapping = sorted(mapping, key=lambda x: x[0])  # not sure if needed
@@ -170,6 +181,8 @@ class FaceMatcher:
         for a, b in mapping:
             full_mapping[a] = b
         print("Face Mapping: ", full_mapping)
+        if reverse:
+            full_mapping = full_mapping[::-1]
         return (full_mapping,)
 
 
