@@ -182,7 +182,9 @@ class FaceMatcher:
             full_mapping[a] = b
         print("Face Mapping: ", full_mapping)
         if reverse:
-            full_mapping = full_mapping[::-1]
+            reverse_mapping = full_mapping[::-1]
+            print("Reversed Face Mapping: ", reverse_mapping)
+            return (reverse_mapping,)
         return (full_mapping,)
 
 
@@ -204,7 +206,7 @@ class ShowPermutation:
     CATEGORY = "Personal Tools"
 
     def show_mapping(self, mapping):
-        print(mapping)
+        print("SHOW permutation", mapping)
         return (None,)
 
 
