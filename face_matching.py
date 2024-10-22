@@ -148,13 +148,13 @@ class FaceMatcher:
             }
         }
 
-    INPUT_IS_LIST = (True, True)
+    INPUT_IS_LIST = (True, True, False)
     RETURN_TYPES = ("MAPPING",)
     RETURN_NAMES = ("MAPPING",)
     FUNCTION = "match_faces"
     CATEGORY = "Personal Tools"
 
-    def match_faces(self, input_faces: list, target_faces: list, reverse=False):
+    def match_faces(self, input_faces: list, target_faces: list, reverse: bool= False):
         if len(input_faces) == 0 or len(target_faces) == 0:
             return (None, )
         # input_faces = torch.cat(input_faces, dim=0)
@@ -181,6 +181,8 @@ class FaceMatcher:
         for a, b in mapping:
             full_mapping[a] = b
         print("Face Mapping: ", full_mapping)
+        if type(reverse) == list:
+            reverse = reverse[0]
         if reverse:
             reverse_mapping = full_mapping[::-1]
             print("Reversed Face Mapping: ", reverse_mapping)
